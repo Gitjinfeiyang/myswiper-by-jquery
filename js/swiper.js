@@ -2,316 +2,373 @@
  * Created by jinfeiyang on 2017-03-23.
  */
 
-;(function($){
+;(function ($) {
 
-    const [CONTENT,BOX]=['.content','.img-box'];//定义div类名
-    const [FAST,SLOW]=['0.4s','0.8s'];//transform速度
+    const [CONTENT, BOX]=['.img-content', '.img-box']; //定义div类名
+    const [FAST, SLOW]=['0.4s', '0.8s']; //transform速度
 
-    let boxWidth=0;//每个img-box的宽度
-    let boxHeight=0;//每个img-box的高度
-    let contentWidth=0;//总的宽度
-    let contentHeight=0;//总的高度
+    let boxWidth = 0; //每个img-box的宽度
+    let boxHeight = 0; //每个img-box的高度
+    let contentWidth = 0; //总的宽度
+    let contentHeight = 0; //总的高度
 
     //纵向
-    let horizontal={
-        boxStyle:{
-            height:boxHeight,
+    let horizontal = {
+        boxStyle: {
+            height: boxHeight,
         },
-        contentStyle:{
-            height:contentHeight,
-            transform:'translate3d(0px,0px,0px)'
+        contentStyle: {
+            height: contentHeight,
+            transform: 'translate3d(0px,0px,0px)'
         },
-        imgStyle:{
-            height:'100%'
+        imgStyle: {
+            height: '100%'
         }
     };
     //横向排列
-    let vertical={
-        boxStyle:{
+    let vertical = {
+        boxStyle: {
             //overflow:'scroll',
-            float:'left',
-            width:boxWidth,
+            position: 'relative',
+            float: 'left',
+            width: boxWidth,
+            height:'100%'
         },
-        contentStyle:{
-            width:contentWidth,
-            transform:'translate3d(0px,0px,0px)'
+        contentStyle: {
+            width: contentWidth,
+            height:'100%',
+            transform: 'translate3d(0px,0px,0px)'
         },
-        imgStyle:{
-            width:'100%'
+        imgStyle: {
+            width: '100%'
         }
     };
 
-    let reg=/matrix(?:(3d)\(-{0,1}\d+(?:, -{0,1}\d+)*(?:, (-{0,1}\d+))(?:, (-{0,1}\d+))(?:, (-{0,1}\d+)), -{0,1}\d+\)|\(-{0,1}\d+(?:, -{0,1}\d+)*(?:, (-{0,1}\d+))(?:, (-{0,1}\d+))\))/;
 
-
-    let defaultOptions={
-        direction:vertical,
-        speed:SLOW,
-        autoplay:5000,
-        index:true
+    let defaultOptions = {
+        direction: vertical,
+        speed: SLOW,
+        autoplay: 5000,
+        index: true,
+        animationDone: function (index) {
+            console.log(index);
+        }
     };
 
-    class MySwiper{
-        constructor(options,container){
-            if(options.direction=='horizontal'){
-                options.direction=horizontal;
-            }else if(options.direction=='vertical'){
-                options.direction=vertical;
+    class MySwiper {
+        constructor(options, container) {
+            if (options.direction == 'horizontal') {
+                options.direction = horizontal;
+            } else if (options.direction == 'vertical') {
+                options.direction = vertical;
             }
-            if(options.speed=='fast'){
-                options.speed=FAST;
-            }else if(options.speed=='slow'){
-                options.speed=SLOW;
+            if (options.speed == 'fast') {
+                options.speed = FAST;
+            } else if (options.speed == 'slow') {
+                options.speed = SLOW;
             }
-            this.options=$.extend({},defaultOptions,options);
-            this.container=container;
-            this.content=this.container.children(CONTENT);
-            this.box=this.content.children(BOX);
+            this.options = $.extend({}, defaultOptions, options);
+            this.container = container;
+            this.content = this.container.children(CONTENT);
+            this.box = this.content.children(BOX);
 
         }
 
-        initStyle(){
-            this.caculate(this.content,this.options.direction);//计算各种高度并且赋值
-            this.options.direction.contentStyle.transition='all '+this.options.speed;//赋值
-            if(this.options.index){
-                this.container.css('position','relative');
+        initStyle() {
+            this.caculate(this.content, this.options.direction);//计算各种高度并且赋值
+            this.options.direction.contentStyle.transition = 'all ' + this.options.speed;//赋值
+            if (this.options.index) {
+                this.container.css('position', 'relative');
                 this.addIndex();
             }
 
             this.container.children(CONTENT).css(this.options.direction.contentStyle).children(BOX).//应用计算好的样式
-                css(this.options.direction.boxStyle).children('img').css(this.options.direction.imgStyle);
-            if(this.options.autoplay>=2000){//应用自动切换
+            css(this.options.direction.boxStyle).children('img').css(this.options.direction.imgStyle);
+
+            if (this.options.autoplay >= 2000) {//应用自动切换
                 this.autoSwitch(true);
             }
             this.addEvent();//应用触摸事件
         }
 
-        addEvent(){
-            let transformS=0;//初始transform值 用于保存初始状态
-            let start=0;
-            let distance=0;//划过的距离 矢量
-            let b=true;
-            let location=0;//在当前页的位置
+        addEvent() {
+            let transformS = 0;//初始transform值 用于保存初始状态
+            let start = 0;
+            let distance = 0;//划过的距离 矢量
+            let b = true;
+            let location = 0;//在当前页的位置
 
-            this.container.on('touchstart',e => {
+            this.container.on('touchstart', e => {
                 this.autoSwitch(false);
-                touchStartHandler(e,this);
+                touchStartHandler(e, this);
             });
-            this.container.on('touchmove',e => {
-                if(b===false){//函数节流
-                 return;
+            this.container.on('touchmove', e => {
+                if (b === false) {//函数节流
+                    return;
                 }
-                b=false;
+                b = false;
 
-                touchMoveHandler(e,this);
+                touchMoveHandler(e, this);
 
-                setTimeout(function(){
-                    b=true;
-                },5);
+                setTimeout(function () {
+                    b = true;
+                }, 5);
             });
-            this.container.on('touchend',e => {
-                touchEndHandler(e,this);
-                this.autoSwitch(true);
+            this.container.on('touchend', e => {
+                touchEndHandler(e, this);
+                if(this.options.autoplay>2000){
+                    this.autoSwitch(true);
+                }
             });
 
-            $('#j-next-button').on('click',(function(e){
+            $('#j-next-button').on('click', (function (e) {
                 this.goNext();
             }).bind(this));
 
-            $('#j-last-button').on('click',(function(e){
+            $('#j-last-button').on('click', (function (e) {
                 this.goLast();
             }).bind(this));
 
-            function touchStartHandler(e,that){
-                if(that.options.direction==vertical){
-                    transformS=parseInt(that.content.css('transform').split(',')[4]);
-                    that.content.css('transform','translate3d('+transformS+'px,0,0)');
-                    start=e.changedTouches[0].clientX;
-                }else{
-                    transformS=parseInt(that.content.css('transform').split(',')[5].split(')')[0]);
-                    that.content.css('transform','translate3d(0,'+transformS+'px,0)');
-                    start=e.changedTouches[0].clientY;
+            this.content.on(transitionEndEventName, e => {
+                let transformS = parseInt(this.content.css('transform').split(',')[4]);
+                let pageIndex = parseInt(transformS / boxWidth) * -1;
+                this.options.animationDone(pageIndex);
+            });
+
+            function touchStartHandler(e, that) {
+                if (that.options.direction == vertical) {
+                    transformS = parseInt(that.content.css('transform').split(',')[4]);
+                    that.content.css('transform', 'translate3d(' + transformS + 'px,0,0)');
+                    start = e.changedTouches[0].clientX;
+                } else {
+                    transformS = parseInt(that.content.css('transform').split(',')[5].split(')')[0]);
+                    that.content.css('transform', 'translate3d(0,' + transformS + 'px,0)');
+                    start = e.changedTouches[0].clientY;
                 }
-                that.content.css('transition','none');
+                that.content.css('transition', 'none');
             }
 
-            function touchMoveHandler(e,that){
-                if(that.options.direction==vertical){
-                    distance=e.changedTouches[0].clientX-start;
-                    that.content.css('transform','translate3d('+(transformS+distance)+'px,0,0)');
-                }else{
-                    distance=e.changedTouches[0].clientY-start;
-                    that.content.css('transform','translate3d(0,'+(transformS+distance)+'px,0)');
+            function touchMoveHandler(e, that) {
+                if (that.options.direction == vertical) {
+                    distance = e.changedTouches[0].clientX - start;
+                    that.content.css('transform', 'translate3d(' + (transformS + distance) + 'px,0,0)');
+                } else {
+                    distance = e.changedTouches[0].clientY - start;
+                    that.content.css('transform', 'translate3d(0,' + (transformS + distance) + 'px,0)');
                 }
             }
 
-            function touchEndHandler(e,that){
-                that.content.css('transition','all '+that.options.speed);
-                if(that.options.direction==vertical){
-                    transformS=parseInt(that.content.css('transform').split(',')[4]);
-                    location=transformS>=0?transformS%boxWidth:(-1*transformS)%boxWidth;
-                    that.autoTransformX(distance,transformS,location);
-                }else{
-                    transformS=parseInt(that.content.css('transform').split(',')[5].split(')')[0]);
-                    location=transformS>=0?transformS%boxHeight:(-1*transformS)%boxHeight;
+            function touchEndHandler(e, that) {
+                that.content.css('transition', 'all ' + that.options.speed);
+                if (that.options.direction == vertical) {
+                    transformS = parseInt(that.content.css('transform').split(',')[4]);
+                    location = transformS >= 0 ? transformS % boxWidth : (-1 * transformS) % boxWidth;
+                    that.autoTransformX(distance, transformS, location);
+                } else {
+                    transformS = parseInt(that.content.css('transform').split(',')[5].split(')')[0]);
+                    location = transformS >= 0 ? transformS % boxHeight : (-1 * transformS) % boxHeight;
                     console.log(boxHeight);
-                    that.autoTransformY(distance,transformS,location);
+                    that.autoTransformY(distance, transformS, location);
                 }
             }
         }
 
-        addIndex(){
-            let lists='';
-            for(let i=0; i<this.box.length; i++){
-                lists+=`<li class='index-${-1*i}' style="display:inline-block; width:6px; height:6px; border-radius: 50%; margin-right: 20px;
-                            background:rgba(255,255,255,0.5); box-shadow: rgba(218,217,214,0.5); transition:all 0.5s"></li>`;
+        addIndex() {
+            let lists = '';
+            for (let i = 0; i < this.box.length; i++) {
+                lists += `<li data-index=${i} class='index-${-1 * i}' style="display:inline-block; width:8px; height:8px; border-radius: 50%; margin-right: 20px;
+                            background:rgba(255,255,255,0.5); box-shadow: rgba(218,217,214,0.5); transition:all 0.5s; cursor:pointer;"></li>`;
             }
-            this.container.append(`<div style="width:100%;padding-bottom: 10px;position:absolute; 
+            this.container.append(`<div class="index-bar" style="width:100%;padding-bottom: 20px;position:absolute; 
                             left: 0; bottom:0;"><ul style="text-align: center; margin:0;">${lists}</ul></div>`);
-            this.container.on('boxswitched',(function(e,pageIndex){//监听自定义事件
-               //console.log(this.container.find(".index-"+pageIndex));
-               this.container.find("li").css('transform',"scale(1)");
-               this.container.find(".index-"+pageIndex).css('transform',"scale(2)");
+            this.container.on('boxswitched', (function (e, pageIndex) {//监听自定义事件
+                this.container.find("li").css('transform', "scale(1)");
+                this.container.find(".index-" + pageIndex).css('transform', "scale(2)");
             }).bind(this));
+            $('.index-bar').on('click', (e) => {
+                console.log(e.target.dataset.index);
+                if (e.target.nodeName == 'UL') {
+                    return;
+                } else {
+                    this.goNext(e.target.dataset.index);
+                }
+            })
         }
 
         //计算所有img-box加起来的宽度或高度
-        caculate(content,direction){
-        switch (direction){
-            case vertical:
-                direction.boxStyle.width=boxWidth=this.container.width();
-                content.children(BOX).each(function(){
-                    direction.contentStyle.width+=$(this).width();
-                });
-                break;
-            case horizontal:
-                direction.boxStyle.height=boxHeight=this.container.height();
-                content.children(BOX).each(function(){
-                    direction.contentStyle.height+=$(this).height();
-                });
-                break;
+        caculate(content, direction) {
+            switch (direction) {
+                case vertical:
+                    direction.boxStyle.width = boxWidth = this.container.width();
+                    content.children(BOX).each(function () {
+                        direction.contentStyle.width += $(this).width();
+                    });
+                    break;
+                case horizontal:
+                    direction.boxStyle.height = boxHeight = this.container.height();
+                    content.children(BOX).each(function () {
+                        direction.contentStyle.height += $(this).height();
+                    });
+                    break;
+            }
         }
-    }
 
-        autoTransformX(distance,transformS,location){
-            let pageIndex=parseInt(transformS/boxWidth);//当前页index 从0 ~ -n
+        autoTransformX(distance, transformS, location) {
+            let pageIndex = parseInt(transformS / boxWidth);//当前页index 从0 ~ -n
             // console.log('pageIndex',pageIndex,'distance',distance,'location',location);
 
 
-            if(distance>0){//向右滑动 pageIndex为左边页
-                if(pageIndex>=0){//判断是否为第一张
+            if (distance > 0) {//向右滑动 pageIndex为左边页
+                if (pageIndex >= 0) {//判断是否为第一张
                     this.content.css('transform', 'translate3d(0,0,0)');
-                    this.container.trigger('boxswitched',[pageIndex]);
+                    this.container.trigger('boxswitched', [pageIndex]);
                     return;
                 }
-                if(location<(boxWidth*4/5)){//划过5分之一即上一页
+                if (location < (boxWidth * 4 / 5)) {//划过5分之一即上一页
                     this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth) + 'px,0,0)');
-                    this.container.trigger('boxswitched',[pageIndex]);
+                    this.container.trigger('boxswitched', [pageIndex]);
 
-                }else{
-                    this.content.css('transform','translate3d('+(pageIndex*boxWidth-boxWidth)+'px,0,0)');
+                } else {
+                    this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth - boxWidth) + 'px,0,0)');
                 }
-            }else if(distance<0){//向左滑动 pageIndex表示当前页
-                if(pageIndex*-1==(this.box.length-1)){//判断是否为最后一张
-                    this.content.css('transform','translate3d('+(pageIndex*boxWidth)+'px,0,0)')
+            } else if (distance < 0) {//向左滑动 pageIndex表示当前页
+                if (pageIndex * -1 == (this.box.length - 1)) {//判断是否为最后一张
+                    this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth) + 'px,0,0)')
                     return;
                 }
-                if(location>(boxWidth/5)){//划过5分之一
+                if (location > (boxWidth / 5)) {//划过5分之一
                     this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth - boxWidth) + 'px,0,0)');
-                    this.container.trigger('boxswitched',[pageIndex-1]);//pageIndex表示当前页
+                    this.container.trigger('boxswitched', [pageIndex - 1]);//pageIndex表示当前页
 
-                }else{
-                    this.content.css('transform','translate3d('+(pageIndex*boxWidth)+'px,0,0)');
+                } else {
+                    this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth) + 'px,0,0)');
                 }
-            }else{
+            } else {
 
             }
 
         }
 
-        autoTransformY(distance,transformS,location){
-            let pageIndex=parseInt(transformS/boxHeight);//当前页index 从0 ~ -n
+        autoTransformY(distance, transformS, location) {
+            let pageIndex = parseInt(transformS / boxHeight);//当前页index 从0 ~ -n
             // console.log('pageIndex',pageIndex,'distance',distance,'location',location);
 
 
-            if(distance>0){//向下滑动 pageIndex为左边页
-                if(pageIndex>=0){//判断是否为第一张
+            if (distance > 0) {//向下滑动 pageIndex为左边页
+                if (pageIndex >= 0) {//判断是否为第一张
                     this.content.css('transform', 'translate3d(0,0,0)');
                     return;
                 }
-                if(location<(boxHeight*4/5)){//划过5分之一即上一页
-                    this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight)+'px,0)');
-                }else{
+                if (location < (boxHeight * 4 / 5)) {//划过5分之一即上一页
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight) + 'px,0)');
+                } else {
                     // console.log('right: back to origin');
-                    this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight-boxHeight)+'px,0)');
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight - boxHeight) + 'px,0)');
                 }
-            }else if(distance<0){//向上滑动 pageIndex表示当前页
-                if(pageIndex*-1==(this.box.length-1)){//判断是否为最后一张
-                    this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight)+'px,0)');
+            } else if (distance < 0) {//向上滑动 pageIndex表示当前页
+                if (pageIndex * -1 == (this.box.length - 1)) {//判断是否为最后一张
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight) + 'px,0)');
                     return;
                 }
-                if(location>(boxHeight/5)){//划过5分之一
-                    this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight-boxHeight)+'px,0)');
-                }else{
+                if (location > (boxHeight / 5)) {//划过5分之一
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight - boxHeight) + 'px,0)');
+                } else {
                     // console.log('left:back to origin');
-                    this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight)+'px,0)');
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight) + 'px,0)');
                 }
-            }else{
+            } else {
 
             }
         }
 
-        autoSwitch(swt){
-            if(swt){
-                this.autoSwitchInterval=setInterval((function(e){
+        autoSwitch(swt) {
+            if (swt) {
+                this.autoSwitchInterval = setInterval((function (e) {
                     this.goNext();
-                }).bind(this),this.options.autoplay);
-            }else{
+                }).bind(this), this.options.autoplay);
+            } else {
                 clearInterval(this.autoSwitchInterval);
             }
 
         }
 
         //只适用于未运动状态
-        goNext(){
-            let transformS=0;
-            let pageIndex=0;
-            if(this.options.direction==vertical){
-                transformS=parseInt(this.content.css('transform').split(',')[4]);
-                pageIndex=transformS/boxWidth<=((this.box.length-1)*-1)?1:parseInt(transformS/boxWidth);
-                this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth-boxWidth) + 'px,0,0)');
-            }else{
-                transformS=parseInt(this.content.css('transform').split(',')[5].split(')')[0]);
-                pageIndex=transformS/boxHeight<=((this.box.length-1)*-1)?1:parseInt(transformS/boxHeight);
-                console.log(pageIndex);
-                this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight-boxHeight)+'px,0)');
+        goNext(index) {
+            let transformS = 0;
+            let pageIndex = 0;
+            if (index) {
+                pageIndex = index * -1;
+                if (this.options.direction == vertical) {
+                    this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth) + 'px,0,0)');
+                } else {
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight) + 'px,0)');
+                }
+                pageIndex++;
+            } else {
+                if (this.options.direction == vertical) {
+                    transformS = parseInt(this.content.css('transform').split(',')[4]);
+                    pageIndex = transformS / boxWidth <= ((this.box.length - 1) * -1) ? 1 : parseInt(transformS / boxWidth);
+                    this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth - boxWidth) + 'px,0,0)');
+                } else {
+                    transformS = parseInt(this.content.css('transform').split(',')[5].split(')')[0]);
+                    pageIndex = transformS / boxHeight <= ((this.box.length - 1) * -1) ? 1 : parseInt(transformS / boxHeight);
+                    console.log(pageIndex);
+                    this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight - boxHeight) + 'px,0)');
+                }
             }
-            this.container.trigger('boxswitched',[pageIndex-1]);
+            this.container.trigger('boxswitched', [pageIndex - 1]);
 
         }
 
-        goLast(){
-            let transformS=0;
-            let pageIndex=0;
-            if(this.options.direction==vertical){
-                transformS=parseInt(this.content.css('transform').split(',')[4]);
-                pageIndex=transformS/boxWidth>=0?((this.box.length)*-1):parseInt(transformS/boxWidth);
-                this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth+boxWidth) + 'px,0,0)');
-            }else{
-                transformS=parseInt(this.content.css('transform').split(',')[5].split(')')[0]);
-                pageIndex=transformS/boxHeight>=0?((this.box.length)*-1):parseInt(transformS/boxHeight);
-                this.content.css('transform', 'translate3d(0,'+(pageIndex * boxHeight+boxHeight)+'px,0)');
+        goLast() {
+            let transformS = 0;
+            let pageIndex = 0;
+            if (this.options.direction == vertical) {
+                transformS = parseInt(this.content.css('transform').split(',')[4]);
+                pageIndex = transformS / boxWidth >= 0 ? ((this.box.length) * -1) : parseInt(transformS / boxWidth);
+                this.content.css('transform', 'translate3d(' + (pageIndex * boxWidth + boxWidth) + 'px,0,0)');
+            } else {
+                transformS = parseInt(this.content.css('transform').split(',')[5].split(')')[0]);
+                pageIndex = transformS / boxHeight >= 0 ? ((this.box.length) * -1) : parseInt(transformS / boxHeight);
+                this.content.css('transform', 'translate3d(0,' + (pageIndex * boxHeight + boxHeight) + 'px,0)');
             }
-            this.container.trigger('boxswitched',[pageIndex+1]);
+            this.container.trigger('boxswitched', [pageIndex + 1]);
 
         }
 
     }
 
-    $.fn.swiper=function(options){
-        let mySwiper=new MySwiper(options,this);
+    $.fn.swiper = function (options) {
+        let mySwiper = new MySwiper(options, this);
         mySwiper.initStyle();
     }
 
 
+    let transElement = document.createElement('trans');
+    let transitionEndEventNames = {
+        'WebkitTransition': 'webkitTransitionEnd',
+        'MozTransition': 'transitionend',
+        'OTransition': 'oTransitionEnd',
+        'transition': 'transitionend'
+    };
+    let animationEndEventNames = {
+        'WebkitTransition': 'webkitAnimationEnd',
+        'MozTransition': 'animationend',
+        'OTransition': 'oAnimationEnd',
+        'transition': 'animationend'
+    };
+
+    function findEndEventName(endEventNames) {
+        for (let name in endEventNames) {
+            if (transElement.style[name] !== undefined) {
+                return endEventNames[name];
+            }
+        }
+    }
+
+    let transitionEndEventName = findEndEventName(transitionEndEventNames);
+    let animationEndEventName = findEndEventName(animationEndEventNames);
+
+
 })(window.jQuery);
+
